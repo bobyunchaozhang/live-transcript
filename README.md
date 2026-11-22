@@ -39,6 +39,6 @@ swift test
 - [X-ASR](https://github.com/Gilgamesh-J/X-ASR) 提供中英文流式语音识别模型。
 - [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) 和 [ONNX Runtime](https://github.com/microsoft/onnxruntime) 提供模型推理。
 - [SpeexDSP](https://github.com/xiph/speexdsp) 提供回声消除；源码许可随 `Sources/EchoDSP/Vendor` 提供。
-- 应用图标使用 [IconPark 的 voice-input](https://icon-sets.iconify.design/icon-park/voice-input/)。
+- 应用图标使用 ByteDance IconPark 的 `voice-input` 图形，许可为 Apache 2.0。会听将原图形放在自制的 macOS 图标底板上，并将原图形另存为 PNG 用于空白页。出处和改动见 [IconPark 声明](script/ThirdParty/IconPark-NOTICE.txt)。
 
 打包后的许可证和声明位于应用包内的 `Contents/Resources/ThirdParty`。

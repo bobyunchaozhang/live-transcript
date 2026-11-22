@@ -20,7 +20,7 @@ struct TranscriptView: View {
                         )
                         .frame(maxWidth: .infinity, alignment: local ? .trailing : .leading)
                         .padding(.top, row.startsSource ? 13 : 6)
-                        .transition(.offset(y: 10).combined(with: .opacity))
+                        .transition(.opacity)
                     }
                 }
                 .padding(.horizontal, 15)

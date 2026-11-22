@@ -32,13 +32,14 @@ else
     pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 fi
 
-mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources" "$APP_DIR/Contents/Frameworks"
+mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources/ThirdParty" "$APP_DIR/Contents/Frameworks"
 for library in "$ASR_ASSETS"/Frameworks/*.dylib; do
     /bin/cp -p "$library" "$APP_DIR/Contents/Frameworks/"
 done
 /bin/cp -R "$ASR_ASSETS/Resources/." "$APP_DIR/Contents/Resources"
 cp "$BUILD_BINARY" "$APP_BINARY"
 cp "$ROOT_DIR/script/Info.plist" "$APP_DIR/Contents/Info.plist"
+cp "$ROOT_DIR"/script/ThirdParty/*.txt "$APP_DIR/Contents/Resources/ThirdParty/"
 cp "$ROOT_DIR/Sources/EchoDSP/Vendor/COPYING" "$APP_DIR/Contents/Resources/ThirdParty/SpeexDSP-LICENSE.txt"
 cp "$ROOT_DIR/script/AppIcon.icns" "$APP_DIR/Contents/Resources/VoiceInputAppIcon.icns"
 cp "$ROOT_DIR/script/VoiceInput.png" "$APP_DIR/Contents/Resources/"

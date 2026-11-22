@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 struct ConversationToolbar: View {
-    fileprivate static let controlHeight: CGFloat = 28
+    fileprivate static let controlHeight: CGFloat = 21
 
     let model: RecorderModel
     let lines: [TranscriptLine]

@@ -35,7 +35,7 @@ tar -xf "$CACHE/runtime.tar.bz2" -C "$STAGING"
 tar -xf "$CACHE/model.tar.bz2" -C "$STAGING"
 
 ASSETS="$STAGING/assets"
-mkdir -p "$ASSETS/Frameworks" "$ASSETS/Resources/BilingualSpeech" "$ASSETS/Resources/ThirdParty"
+mkdir -p "$ASSETS/Frameworks" "$ASSETS/Resources/BilingualSpeech"
 for library in libonnxruntime.dylib libsherpa-onnx-c-api.dylib; do
     /usr/bin/lipo -verify_arch arm64 "$STAGING/$RUNTIME/lib/$library"
     /usr/bin/lipo -verify_arch x86_64 "$STAGING/$RUNTIME/lib/$library"
@@ -45,7 +45,6 @@ done
 for file in encoder.int8.onnx decoder.onnx joiner.int8.onnx tokens.txt; do
     cp "$STAGING/$MODEL/$file" "$ASSETS/Resources/BilingualSpeech/$file"
 done
-cp "$ROOT_DIR"/script/ThirdParty/*.txt "$ASSETS/Resources/ThirdParty/"
 if [[ ! -d "$DESTINATION" ]]; then
     mv "$ASSETS" "$DESTINATION"
 fi

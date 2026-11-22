@@ -1,0 +1,7 @@
+This app uses the voice-input glyph from IconPark by ByteDance.
+Upstream project: https://github.com/bytedance/IconPark
+Icon listing: https://icon-sets.iconify.design/icon-park/voice-input/
+License: Apache License 2.0 (see IconPark-LICENSE.txt).
+
+The original glyph is rendered to PNG for the app's empty state.
+The macOS app icon places and scales the glyph on a custom rounded tile.
