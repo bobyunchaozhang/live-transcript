@@ -1,0 +1,17 @@
+# SwiftPM and distribution artifacts
+/.build/
+/.swiftpm/
+/dist/
+*.app/
+*.dSYM/
+
+# Local Xcode and Finder files
+DerivedData/
+xcuserdata/
+*.xcuserstate
+.DS_Store
+
+# Local environment settings
+.env
+.env.*
+!.env.example

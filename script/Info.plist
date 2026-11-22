@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>zh_CN</string>
+    <key>CFBundleDisplayName</key>
+    <string>会听</string>
+    <key>CFBundleName</key>
+    <string>会听</string>
+    <key>CFBundleExecutable</key>
+    <string>LiveTranscript</string>
+    <key>CFBundleIdentifier</key>
+    <string>local.bob.LiveTranscript</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.1</string>
+    <key>CFBundleVersion</key>
+    <string>2</string>
+    <key>CFBundleIconFile</key>
+    <string>VoiceInputAppIcon.icns</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>15.0</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>会听使用本机麦克风把你身边的声音实时转成文字。</string>
+    <key>NSAudioCaptureUsageDescription</key>
+    <string>会听把会议及其他应用播放的声音实时转成文字。</string>
+</dict>
+</plist>
