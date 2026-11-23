@@ -4,11 +4,14 @@
 
 ## 安装与使用
 
-**[下载 macOS 通用版](https://github.com/bobyunchaozhang/live-transcript/releases/latest)**。在发布页的 Assets 中选择文件名以 `-macos-universal.zip` 结尾的安装包。
+**[下载 macOS 安装包](https://github.com/bobyunchaozhang/live-transcript/releases/latest)**。在发布页的 Assets 中按芯片选择 ZIP。
 
-需要 macOS 15 Sequoia 或更新版本。通用版同时支持 Apple 芯片和 Intel 芯片。请在 [Apple 的 macOS 15 兼容机型列表](https://support.apple.com/zh-cn/120282) 确认你的 Mac 型号。
+- **Apple 芯片（M 系列）**选择 `-macos-arm64.zip`。
+- **Intel 芯片**选择 `-macos-universal.zip`，通用版也支持 Apple 芯片。
 
-1. 解压通用版 ZIP，将「会听.app」移到「应用程序」文件夹后打开。也可以按下文从源码构建。
+需要 macOS 15 Sequoia 或更新版本。请在 [Apple 的 macOS 15 兼容机型列表](https://support.apple.com/zh-cn/120282) 确认你的 Mac 型号。
+
+1. 解压 ZIP，将「会听.app」移到「应用程序」文件夹后打开。也可以按下文从源码构建。
 2. 点击「开始转写」。首次使用时，按 macOS 提示授予麦克风和系统音频访问权限。
 3. 应用音频在左，本机麦克风在右。同一来源连续发言时，只在首段显示来源。时间戳使用北京时间（UTC+08:00）。
 4. 点击「暂停」会释放两路采集，点击「继续」会接着写入同一份 Markdown。点击「停止」并确认后结束本次转写。使用顶部「访达」定位当前文件。
@@ -28,13 +31,14 @@ swift test
 
 开发版输出到 `dist/LiveTranscript.app`。默认测试覆盖转写顺序、Markdown、回声消除和暂停／继续等逻辑。模型识别测试可通过 `HUITING_ASR_TEST_ASSETS` 指向已构建应用的 `Contents`，并通过 `HUITING_ASR_TEST_WAVS` 指向包含 `mandarin.wav` 和 `english.wav` 的 16 kHz 单声道 PCM 测试目录。
 
-### 打包通用版
+### 打包
 
 ```sh
 ./script/build_and_run.sh --package
+./script/build_and_run.sh --package-arm64
 ```
 
-脚本将 **arm64** 和 **x86_64** 两个架构装入同一个应用包，并内置两个架构的识别运行库。产物为 `dist/universal/会听.app` 和 `dist/huiting-<版本>-macos-universal.zip`。
+`--package` 生成包含 arm64 和 x86_64 的通用版，产物为 `dist/universal/会听.app` 和 `dist/huiting-<版本>-macos-universal.zip`。`--package-arm64` 生成 Apple 芯片版，产物为 `dist/arm64/会听.app` 和 `dist/huiting-<版本>-macos-arm64.zip`。两种安装包均内置离线识别模型。
 
 ## 第三方组件
 

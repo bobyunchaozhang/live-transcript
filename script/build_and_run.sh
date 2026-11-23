@@ -9,32 +9,52 @@ APP_DIR="$ROOT_DIR/dist/$APP_NAME.app"
 
 cd "$ROOT_DIR"
 BUILD_FLAGS=(-c debug)
+PACKAGE_VARIANT=""
 case "$MODE" in
     run|--debug|--logs|--telemetry|--verify) ;;
     --package)
-        BUILD_FLAGS=(-c release --arch arm64 --arch x86_64 --scratch-path "$ROOT_DIR/.build/universal")
-        APP_DIR="$ROOT_DIR/dist/universal/会听.app"
+        PACKAGE_VARIANT=universal
+        PACKAGE_ARCHS=(arm64 x86_64)
+        ;;
+    --package-arm64)
+        PACKAGE_VARIANT=arm64
+        PACKAGE_ARCHS=(arm64)
         ;;
     *)
-        echo "usage: $0 [--debug|--logs|--telemetry|--verify|--package]" >&2
+        echo "usage: $0 [--debug|--logs|--telemetry|--verify|--package|--package-arm64]" >&2
         exit 2
         ;;
 esac
+
+if [[ -n "$PACKAGE_VARIANT" ]]; then
+    BUILD_FLAGS=(-c release --scratch-path "$ROOT_DIR/.build/$PACKAGE_VARIANT")
+    for arch in "${PACKAGE_ARCHS[@]}"; do
+        BUILD_FLAGS+=(--arch "$arch")
+    done
+    APP_DIR="$ROOT_DIR/dist/$PACKAGE_VARIANT/会听.app"
+fi
 
 APP_BINARY="$APP_DIR/Contents/MacOS/$APP_NAME"
 ASR_ASSETS="$(./script/prepare_bilingual_assets.sh)"
 swift build "${BUILD_FLAGS[@]}"
 BUILD_BINARY="$(swift build "${BUILD_FLAGS[@]}" --show-bin-path)/$APP_NAME"
-if [[ "$MODE" == --package ]]; then
-    /usr/bin/lipo -verify_arch arm64 "$BUILD_BINARY"
-    /usr/bin/lipo -verify_arch x86_64 "$BUILD_BINARY"
+if [[ -n "$PACKAGE_VARIANT" ]]; then
+    for arch in "${PACKAGE_ARCHS[@]}"; do
+        /usr/bin/lipo -verify_arch "$arch" "$BUILD_BINARY"
+    done
 else
     pkill -x "$APP_NAME" >/dev/null 2>&1 || true
 fi
 
 mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources/ThirdParty" "$APP_DIR/Contents/Frameworks"
 for library in "$ASR_ASSETS"/Frameworks/*.dylib; do
-    /bin/cp -p "$library" "$APP_DIR/Contents/Frameworks/"
+    destination="$APP_DIR/Contents/Frameworks/$(basename "$library")"
+    if [[ "$PACKAGE_VARIANT" == arm64 ]]; then
+        /usr/bin/lipo -thin arm64 "$library" -output "$destination"
+        /usr/bin/codesign --force --sign - "$destination"
+    else
+        /bin/cp -p "$library" "$destination"
+    fi
 done
 /bin/cp -R "$ASR_ASSETS/Resources/." "$APP_DIR/Contents/Resources"
 cp "$BUILD_BINARY" "$APP_BINARY"
@@ -67,10 +87,10 @@ case "$MODE" in
         sleep 1
         pgrep -x "$APP_NAME"
         ;;
-    --package)
+    --package|--package-arm64)
         /usr/bin/codesign --verify --deep --strict "$APP_DIR"
         VERSION="$(/usr/bin/plutil -extract CFBundleShortVersionString raw "$APP_DIR/Contents/Info.plist")"
-        ARCHIVE="$ROOT_DIR/dist/huiting-$VERSION-macos-universal.zip"
+        ARCHIVE="$ROOT_DIR/dist/huiting-$VERSION-macos-$PACKAGE_VARIANT.zip"
         /usr/bin/ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" "$ARCHIVE.tmp"
         mv -f "$ARCHIVE.tmp" "$ARCHIVE"
         printf '%s\n' "$ARCHIVE"
