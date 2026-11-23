@@ -10,6 +10,7 @@ final class AudioCaptureSession: @unchecked Sendable {
     private var microphone: MicrophoneCapture?
 
     func start(
+        microphoneID: String?,
         receiveMicrophone: @escaping @Sendable (AVAudioPCMBuffer, CMTime) -> Void,
         receiveApplication: @escaping @Sendable (AVAudioPCMBuffer, CMTime) -> Void,
         onError: @escaping @Sendable (any Error) -> Void
@@ -22,13 +23,20 @@ final class AudioCaptureSession: @unchecked Sendable {
                         processingQueue: self.processingQueue, receive: receiveMicrophone, onError: onError
                     )
                     self.microphone = microphone
-                    try microphone.start()
+                    try microphone.start(preferredID: microphoneID)
                     continuation.resume()
                 } catch {
                     self.stopOnControlQueue()
                     continuation.resume(throwing: error)
                 }
             }
+        }
+    }
+
+    func selectMicrophone(_ id: String?, completion: @escaping @Sendable (Result<Void, any Error>) -> Void) {
+        controlQueue.async {
+            guard let microphone = self.microphone else { return }
+            completion(Result { try microphone.selectInput(preferredID: id) })
         }
     }
 

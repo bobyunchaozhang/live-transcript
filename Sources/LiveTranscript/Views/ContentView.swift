@@ -13,7 +13,7 @@ struct ContentView: View {
         VStack(spacing: 9) {
             VStack(alignment: .leading, spacing: 8) {
                 ConversationToolbar(model: model, lines: lines)
-                if let issue = model.issue {
+                if let issue = model.issue ?? model.microphoneIssue {
                     notice(issue, settings: model.permissionSettings, dismiss: model.dismissIssue)
                 }
                 if let diskIssue = model.diskIssue {
@@ -36,7 +36,7 @@ struct ContentView: View {
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 12)
-        .frame(minWidth: 344, minHeight: 455)
+        .frame(minWidth: 390, minHeight: 455)
         .background(palette.backdrop.ignoresSafeArea())
         .containerBackground(palette.backdrop, for: .window)
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)

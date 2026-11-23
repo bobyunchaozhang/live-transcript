@@ -31,6 +31,7 @@ final class LiveTranscriptDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
+        model.observeMicrophones()
         if let file = Bundle.main.object(forInfoDictionaryKey: "CFBundleIconFile") as? String,
            let url = Bundle.main.resourceURL?.appending(path: file),
            let icon = NSImage(contentsOf: url) {

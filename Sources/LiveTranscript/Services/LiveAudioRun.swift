@@ -15,6 +15,7 @@ struct LiveAudioRun {
     static func start(
         decoder: BilingualDecoder,
         origin: CMTime,
+        microphoneID: String?,
         onUpdate: @escaping @Sendable (TranscriptUpdate) async -> Void,
         onError: @escaping @Sendable (any Error) -> Void
     ) async throws -> LiveAudioRun {
@@ -52,6 +53,7 @@ struct LiveAudioRun {
 
         do {
             try await capture.start(
+                microphoneID: microphoneID,
                 receiveMicrophone: { buffer, timestamp in
                     do { try echoRemoval.appendCapture(buffer, at: timestamp) }
                     catch { onError(error) }
@@ -76,6 +78,10 @@ struct LiveAudioRun {
             _ = await worker.result
             throw error
         }
+    }
+
+    func selectMicrophone(_ id: String?, completion: @escaping @Sendable (Result<Void, any Error>) -> Void) {
+        capture.selectMicrophone(id, completion: completion)
     }
 
     func stop() async throws {

@@ -2,6 +2,47 @@ import Foundation
 import Testing
 @testable import LiveTranscript
 
+@Test @MainActor func microphoneChoiceUpdatesAnActiveRunAndCarriesOverToResume() async throws {
+    let testID = UUID().uuidString
+    let folder = FileManager.default.temporaryDirectory.appending(path: testID)
+    let defaults = try #require(UserDefaults(suiteName: testID))
+    defer {
+        defaults.removePersistentDomain(forName: testID)
+        try? FileManager.default.removeItem(at: folder)
+    }
+    let output = try MarkdownOutput(startedAt: .now, directory: folder)
+    let session = TestRecordingSession(markdown: output)
+    let inputs = MicrophoneInputs(defaults: defaults)
+    let model = RecorderModel(prepareSession: { _ in session }, microphoneInputs: inputs)
+
+    model.toggle()
+    await model.waitForTransition()
+    #expect(session.startedWithMicrophones == [nil])
+
+    model.chooseMicrophone("headset")
+    #expect(session.selectedMicrophones == [nil, "headset"])
+    #expect(model.phase == .recording)
+    #expect(session.releases == 0)
+    #expect(MicrophoneInputs(defaults: defaults).preferredID == "headset")
+    await session.send("应用音频继续写入", offset: 4, to: 0)
+    #expect(model.lines.first?.source == .application)
+
+    model.pauseOrResume()
+    await model.waitForTransition()
+    model.chooseMicrophone("built-in")
+    #expect(session.selectedMicrophones == [nil, "headset"])
+    model.pauseOrResume()
+    await model.waitForTransition()
+    #expect(session.startedWithMicrophones == [nil, "built-in"])
+    #expect(model.fileURL == output.url)
+
+    model.chooseMicrophone(nil)
+    #expect(session.selectedMicrophones == [nil, "headset", "built-in", nil])
+    #expect(MicrophoneInputs(defaults: defaults).preferredID == nil)
+    await model.stopAndWait()
+    #expect(try String(contentsOf: output.url, encoding: .utf8).contains("应用音频继续写入"))
+}
+
 @Test @MainActor func requestingStopDoesNotEndTheSessionUntilConfirmed() async throws {
     let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: folder) }
@@ -127,11 +168,14 @@ private final class TestRecordingSession: RecordingSession {
     var failNextStart = false
     private(set) var capturing = false
     private(set) var releases = 0
+    private(set) var startedWithMicrophones: [String?] = []
+    private(set) var selectedMicrophones: [String?] = []
     private var callbacks: [@Sendable (TranscriptUpdate) async -> Void] = []
 
     init(markdown: MarkdownOutput) { self.markdown = markdown }
 
     func startAudio(
+        microphoneID: String?,
         onUpdate: @escaping @Sendable (TranscriptUpdate) async -> Void,
         onError: @escaping @Sendable (any Error) -> Void
     ) async throws {
@@ -140,7 +184,13 @@ private final class TestRecordingSession: RecordingSession {
             throw CaptureError.microphoneUnavailable
         }
         capturing = true
+        startedWithMicrophones.append(microphoneID)
         callbacks.append(onUpdate)
+    }
+
+    func selectMicrophone(_ id: String?, completion: @escaping @Sendable (Result<Void, any Error>) -> Void) {
+        selectedMicrophones.append(id)
+        completion(.success(()))
     }
 
     func stopAudio() async throws {

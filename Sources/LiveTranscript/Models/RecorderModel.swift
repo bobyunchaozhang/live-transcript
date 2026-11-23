@@ -50,10 +50,12 @@ final class RecorderModel {
     private(set) var detail = ""
     private(set) var fileURL: URL?
     private(set) var issue: String?
+    private(set) var microphoneIssue: String?
     private(set) var diskIssue: String?
     private(set) var permissionSettings: URL?
     var showsStopConfirmation = false
 
+    let microphoneInputs: MicrophoneInputs
     private let prepareSession: PrepareSession
     private var transcript = Transcript()
     @ObservationIgnored private var incoming: Transcript?
@@ -62,12 +64,43 @@ final class RecorderModel {
     @ObservationIgnored private var transition: Task<Void, Never>?
     @ObservationIgnored private var scheduledWrite: Task<Void, Never>?
     @ObservationIgnored private var revision = 0
+    @ObservationIgnored private var microphoneRevision = 0
 
-    init(prepareSession: @escaping PrepareSession = LiveSession.prepare(onStatus:)) {
+    init(
+        prepareSession: @escaping PrepareSession = LiveSession.prepare(onStatus:),
+        microphoneInputs: MicrophoneInputs = MicrophoneInputs()
+    ) {
         self.prepareSession = prepareSession
+        self.microphoneInputs = microphoneInputs
     }
 
     var lines: [TranscriptLine] { transcript.lines }
+
+    func observeMicrophones() {
+        microphoneInputs.observeChanges { [weak self] in self?.applyMicrophonePreference() }
+    }
+
+    func chooseMicrophone(_ id: String?) {
+        microphoneInputs.select(id)
+        microphoneIssue = nil
+        applyMicrophonePreference()
+    }
+
+    private func applyMicrophonePreference() {
+        guard phase == .recording, let session, let runID else { return }
+        microphoneRevision += 1
+        let revision = microphoneRevision
+        session.selectMicrophone(microphoneInputs.preferredID) { [weak self] result in
+            Task { @MainActor in
+                guard let self, self.phase == .recording, self.runID == runID,
+                      self.microphoneRevision == revision else { return }
+                switch result {
+                case .success: self.microphoneIssue = nil
+                case .failure: self.microphoneIssue = "无法切换麦克风，请从顶部菜单选择可用的输入。"
+                }
+            }
+        }
+    }
 
     func toggle() {
         switch phase {
@@ -178,6 +211,7 @@ final class RecorderModel {
         let id = UUID()
         runID = id
         try await live.startAudio(
+            microphoneID: microphoneInputs.preferredID,
             onUpdate: { [weak self] update in
                 await self?.receive(update, for: id)
             },
@@ -193,6 +227,7 @@ final class RecorderModel {
         } else {
             transition = nil
             phase = .recording
+            applyMicrophonePreference()
             if !lines.isEmpty { scheduleWrite() }
         }
     }
@@ -287,6 +322,7 @@ final class RecorderModel {
 
     func dismissIssue() {
         issue = nil
+        microphoneIssue = nil
         permissionSettings = nil
     }
 }

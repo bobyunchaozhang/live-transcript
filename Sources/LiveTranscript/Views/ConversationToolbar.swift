@@ -27,6 +27,8 @@ struct ConversationToolbar: View {
             .disabled(model.fileURL == nil)
             .help(model.fileURL?.lastPathComponent ?? "在访达中显示 Markdown")
 
+            MicrophoneMenu(model: model)
+
             Spacer(minLength: 7)
 
             TranscriptionStatus(phase: model.phase)
@@ -67,6 +69,43 @@ struct ConversationToolbar: View {
         let text = lines.map { "[\($0.timestamp)] \($0.source.title)：\($0.text)" }.joined(separator: "\n")
         NSPasteboard.general.clearContents()
         copied = NSPasteboard.general.setString(text, forType: .string)
+    }
+}
+
+private struct MicrophoneMenu: View {
+    let model: RecorderModel
+
+    var body: some View {
+        let inputs = model.microphoneInputs
+        let systemOption = inputs.systemDefault.map { "跟随 macOS · \($0.name)" } ?? "跟随 macOS"
+
+        Menu {
+            option(systemOption, id: nil, isSelected: inputs.preferredID == nil)
+            if inputs.preferredID != nil && inputs.preferredDevice == nil {
+                Text("已选麦克风未连接，暂用 macOS 输入")
+            }
+            if !inputs.devices.isEmpty { Divider() }
+            ForEach(inputs.devices) { device in
+                option(device.name, id: device.id, isSelected: inputs.preferredID == device.id)
+            }
+        } label: {
+            Image(systemName: "mic")
+                .font(.system(size: 11, weight: .medium))
+                .frame(width: 14, height: 17)
+        }
+        .menuStyle(.borderedButton)
+        .fixedSize()
+        .accessibilityLabel("麦克风")
+        .help(inputs.preferredDevice?.name ?? systemOption)
+    }
+
+    private func option(_ title: String, id: String?, isSelected: Bool) -> some View {
+        Button {
+            model.chooseMicrophone(id)
+        } label: {
+            if isSelected { Label(title, systemImage: "checkmark") }
+            else { Text(title) }
+        }
     }
 }
 

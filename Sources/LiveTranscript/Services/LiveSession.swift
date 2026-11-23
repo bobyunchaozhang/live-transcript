@@ -6,9 +6,11 @@ protocol RecordingSession: AnyObject {
     var markdown: MarkdownOutput { get }
 
     func startAudio(
+        microphoneID: String?,
         onUpdate: @escaping @Sendable (TranscriptUpdate) async -> Void,
         onError: @escaping @Sendable (any Error) -> Void
     ) async throws
+    func selectMicrophone(_ id: String?, completion: @escaping @Sendable (Result<Void, any Error>) -> Void)
     func stopAudio() async throws
 }
 
@@ -38,14 +40,19 @@ final class LiveSession: RecordingSession {
     }
 
     func startAudio(
+        microphoneID: String?,
         onUpdate: @escaping @Sendable (TranscriptUpdate) async -> Void,
         onError: @escaping @Sendable (any Error) -> Void
     ) async throws {
         try await MicrophoneCapture.requestPermission()
         try Task.checkCancellation()
         audio = try await LiveAudioRun.start(
-            decoder: decoder, origin: origin, onUpdate: onUpdate, onError: onError
+            decoder: decoder, origin: origin, microphoneID: microphoneID, onUpdate: onUpdate, onError: onError
         )
+    }
+
+    func selectMicrophone(_ id: String?, completion: @escaping @Sendable (Result<Void, any Error>) -> Void) {
+        audio?.selectMicrophone(id, completion: completion)
     }
 
     func stopAudio() async throws {

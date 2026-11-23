@@ -1,5 +1,4 @@
 import AVFoundation
-import CoreAudio
 import CoreMedia
 import Foundation
 
@@ -9,7 +8,8 @@ final class MicrophoneCapture: NSObject, AVCaptureAudioDataOutputSampleBufferDel
     private let processingQueue: DispatchQueue
     private let receive: @Sendable (AVAudioPCMBuffer, CMTime) -> Void
     private let onError: @Sendable (any Error) -> Void
-    private var observers: [any NSObjectProtocol] = []
+    private var input: AVCaptureDeviceInput?
+    private var runtimeObserver: (any NSObjectProtocol)?
 
     init(
         processingQueue: DispatchQueue,
@@ -33,45 +33,62 @@ final class MicrophoneCapture: NSObject, AVCaptureAudioDataOutputSampleBufferDel
         throw CaptureError.microphonePermission
     }
 
-    func start() throws {
-        let builtIn = AVCaptureDevice.DiscoverySession(
-            deviceTypes: [.microphone],
-            mediaType: .audio,
-            position: .unspecified
-        ).devices.first { $0.transportType == Int32(kAudioDeviceTransportTypeBuiltIn) }
-        guard let device = builtIn ?? AVCaptureDevice.default(for: .audio) else {
+    func start(preferredID: String?) throws {
+        guard let device = MicrophoneDevices.resolve(preferredID: preferredID) else {
             throw CaptureError.microphoneUnavailable
         }
         let input = try AVCaptureDeviceInput(device: device)
         guard session.canAddInput(input), session.canAddOutput(output) else {
             throw CaptureError.microphoneUnavailable
         }
-
         session.beginConfiguration()
         session.addInput(input)
         session.addOutput(output)
         output.setSampleBufferDelegate(self, queue: processingQueue)
         session.commitConfiguration()
 
+        self.input = input
         session.startRunning()
         guard session.isRunning else { throw CaptureError.microphoneUnavailable }
+        runtimeObserver = NotificationCenter.default.addObserver(
+            forName: AVCaptureSession.runtimeErrorNotification, object: session, queue: nil
+        ) { [onError] notification in
+            // Device changes are handled by the input monitor without stopping application audio.
+            let error = notification.userInfo?[AVCaptureSessionErrorKey] as? AVError
+            guard error?.code != .deviceWasDisconnected else { return }
+            onError(CaptureError.microphoneInterrupted)
+        }
+    }
 
-        let center = NotificationCenter.default
-        observers = [
-            center.addObserver(forName: AVCaptureSession.runtimeErrorNotification, object: session, queue: nil) {
-                [onError] _ in onError(CaptureError.microphoneInterrupted)
-            },
-            center.addObserver(forName: AVCaptureDevice.wasDisconnectedNotification, object: device, queue: nil) {
-                [onError] _ in onError(CaptureError.microphoneInterrupted)
-            },
-        ]
+    func selectInput(preferredID: String?) throws {
+        guard let device = MicrophoneDevices.resolve(preferredID: preferredID) else {
+            throw CaptureError.microphoneUnavailable
+        }
+        if input?.device.uniqueID != device.uniqueID {
+            let replacement = try AVCaptureDeviceInput(device: device)
+            let previous = input
+            session.beginConfiguration()
+            if let previous { session.removeInput(previous) }
+            if session.canAddInput(replacement) {
+                session.addInput(replacement)
+                input = replacement
+            } else if let previous, previous.device.isConnected, session.canAddInput(previous) {
+                session.addInput(previous)
+            } else {
+                input = nil
+            }
+            session.commitConfiguration()
+            guard input === replacement else { throw CaptureError.microphoneUnavailable }
+        }
+        if !session.isRunning { session.startRunning() }
+        guard session.isRunning else { throw CaptureError.microphoneUnavailable }
     }
 
     func stop() {
-        for observer in observers {
-            NotificationCenter.default.removeObserver(observer)
+        if let runtimeObserver {
+            NotificationCenter.default.removeObserver(runtimeObserver)
+            self.runtimeObserver = nil
         }
-        observers.removeAll()
         session.stopRunning()
         output.setSampleBufferDelegate(nil, queue: nil)
     }
