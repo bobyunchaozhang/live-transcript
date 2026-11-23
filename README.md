@@ -4,6 +4,8 @@
 
 ## 安装与使用
 
+**[下载 macOS 通用版](https://github.com/bobyunchaozhang/live-transcript/releases/latest)**。在发布页的 Assets 中选择文件名以 `-macos-universal.zip` 结尾的安装包。
+
 需要 macOS 15 Sequoia 或更新版本。通用版同时支持 Apple 芯片和 Intel 芯片。请在 [Apple 的 macOS 15 兼容机型列表](https://support.apple.com/zh-cn/120282) 确认你的 Mac 型号。
 
 1. 解压通用版 ZIP，将「会听.app」移到「应用程序」文件夹后打开。也可以按下文从源码构建。
